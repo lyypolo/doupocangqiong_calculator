@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>斗破苍穹高级计算器</title>
     <style>
         body {
@@ -15,6 +15,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            overflow: hidden;
         }
         .calculator {
             position: absolute;
@@ -26,6 +27,7 @@
             background-color: rgba(30, 30, 30, 0.8);
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             backdrop-filter: blur(10px);
+            touch-action: none;
         }
         #display {
             width: 100%;
@@ -76,6 +78,17 @@
         .clear:hover {
             background-color: rgba(255, 0, 0, 0.9);
         }
+        #musicToggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -109,11 +122,13 @@
         </div>
     </div>
 
-    <audio id="numberSound" src="https://www.soundjay.com/button/button-1.mp3"></audio>
-    <audio id="operatorSound" src="https://www.soundjay.com/button/button-2.mp3"></audio>
-    <audio id="equalSound" src="https://www.soundjay.com/button/button-3.mp3"></audio>
-    <audio id="clearSound" src="https://www.soundjay.com/button/button-4.mp3"></audio>
-    <audio id="backgroundMusic" src="https://example.com/background-music.mp3" loop></audio>
+    <button id="musicToggle">音乐 开/关</button>
+
+    <audio id="numberSound" src="sounds/button-1.mp3"></audio>
+    <audio id="operatorSound" src="sounds/button-2.mp3"></audio>
+    <audio id="equalSound" src="sounds/button-3.mp3"></audio>
+    <audio id="clearSound" src="sounds/button-4.mp3"></audio>
+    <audio id="backgroundMusic" src="sounds/background-music.mp3" loop></audio>
 
     <script>
         function playSound(type) {
@@ -175,14 +190,25 @@
         let yOffset = 0;
 
         const calculator = document.querySelector(".calculator");
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        let isMusicPlaying = false;
 
         calculator.addEventListener("mousedown", dragStart);
+        calculator.addEventListener("touchstart", dragStart);
         document.addEventListener("mousemove", drag);
+        document.addEventListener("touchmove", drag);
         document.addEventListener("mouseup", dragEnd);
+        document.addEventListener("touchend", dragEnd);
 
         function dragStart(e) {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
+            if (e.type === "touchstart") {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
 
             if (e.target === calculator) {
                 isDragging = true;
@@ -192,8 +218,13 @@
         function drag(e) {
             if (isDragging) {
                 e.preventDefault();
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
+                if (e.type === "touchmove") {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
 
                 xOffset = currentX;
                 yOffset = currentY;
@@ -205,7 +236,6 @@
         function dragEnd(e) {
             initialX = currentX;
             initialY = currentY;
-
             isDragging = false;
         }
 
@@ -213,11 +243,28 @@
             el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
         }
 
+        function toggleBackgroundMusic() {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                musicToggle.textContent = "音乐 开";
+            } else {
+                backgroundMusic.play();
+                musicToggle.textContent = "音乐 关";
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+
         window.addEventListener('load', () => {
-            const backgroundMusic = document.getElementById('backgroundMusic');
             backgroundMusic.volume = 0.5;
-            backgroundMusic.play();
+            musicToggle.addEventListener('click', toggleBackgroundMusic);
         });
+
+        // 防止页面缩放
+        document.addEventListener('touchmove', function (event) {
+            if (event.scale !== 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
